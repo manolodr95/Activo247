@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sh_event_reg_qr_generator_event_reg_form" model="ir.ui.view">
+        <field name="name">sh.event.req.qr.generator.event.reg.form</field>
+        <field name="model">event.registration</field>
+        <field name="inherit_id" ref="event.view_event_registration_form" />
+        <field name="arch" type="xml">
+            <field name="email" position="after">
+                <field name="sh_er_qr_code" invisible="0" />
+            </field>
+
+            <xpath expr="//sheet/group" position="before">
+                <field name="sh_er_qr_code_img" widget="image" class="oe_avatar" />
+            </xpath>
+        </field>
+    </record>
+</odoo>

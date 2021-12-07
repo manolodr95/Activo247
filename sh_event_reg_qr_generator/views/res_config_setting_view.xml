@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_config_settings_random_number_view_form" model="ir.ui.view">
+            <field name="name">res.config.settings.random.number.view.form.inherit.account</field>
+            <field name="model">res.config.settings</field>
+            <field name="priority" eval="40"/>
+            <field name="inherit_id" ref="event.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@data-key='event']/div" position="after">
+                    <h2>Event Registration QRCode Generator</h2>
+                    <div class="row mt16 o_settings_container" name="event_qrcode_setting_container">
+                        <div class="col-12 col-lg-6 o_setting_box" id="event_qrcode">
+                            <div class="o_setting_left_pane">
+                                <field name="sh_event_reg_qr_generator_random_number" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="sh_event_reg_qr_generator_random_number"/>
+                            </div>
+                        </div>
+                    </div>
+                </xpath>    
+            </field>
+            </record>
+        </data>
+</odoo>

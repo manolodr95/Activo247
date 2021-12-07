@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- template use to render a Registration Badge -->
+    <template id="sh_event_reg_qr_generator_event_reg_report_tmpl_badge" inherit_id="event.event_registration_report_template_badge">
+        <xpath expr="//div[hasclass('col-6')][1]" position="inside">
+            <div class="col-12 text-center mt-2" id="sh_er_qr_code_img">
+                <div class="">
+                    <img t-attf-src="data:image/png;base64, #{o.sh_er_qr_code_img}" alt="Image" style="width: 150px; height: 150px; margin-right: 10px; display: inline;" />
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>
