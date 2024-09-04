@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    © 2024 Daniel Eduardo Diaz Mateo <daniel.diaz@isjo-technology.com>
+-->
+<odoo>
+    <data noupdate="1">
+
+        <!-- Crear el registro account.tax -->
+        <record id="1_tax_18_sale" model="account.tax">
+            <field name="name">18% Sales Tax</field>
+            <field name="amount">18</field>
+            <field name="type_tax_use">sale</field>
+        </record>
+
+
+        <!-- Crear el identificador externo para el registro de account.tax -->
+        <record id="1_tax_18_sale" model="ir.model.data">
+            <field name="name">1_tax_18_sale</field>
+            <field name="model">account.tax</field>
+            <field name="module">dgii_reports</field>
+            <!--<field name="res_id" eval="ref('account.1_tax_18_sale')"/>-->
+        </record>
+
+    </data>
+</odoo>
