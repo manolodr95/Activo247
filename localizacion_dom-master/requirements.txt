@@ -1,4 +1,0 @@
-simplejson
-zeep
-python-stdnum
-pycountry
