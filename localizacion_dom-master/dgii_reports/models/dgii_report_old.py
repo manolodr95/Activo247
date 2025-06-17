@@ -1389,20 +1389,10 @@ class DgiiReport(models.Model):
             for sale_invoice in sale_invoices:
 
                 # AII                    
-                # ncf_type = sale_invoice.invoice_id.fiscal_type_id.prefix
-                # attachment_a_lines[box_ncf_type[ncf_type]]['quantity'] += 1
                 ncf_type = sale_invoice.invoice_id.fiscal_type_id.prefix
-                if ncf_type and ncf_type in box_ncf_type:
-                    attachment_a_lines[box_ncf_type[ncf_type]]['quantity'] += 1
-                else:
-                    _logger.warning(f"Invalid ncf_type: {ncf_type} for invoice {sale_invoice.invoice_id.id}")
-                if not ncf_type or ncf_type not in box_ncf_type:
-                    _logger.warning(f"Invalid ncf_type: {ncf_type} for invoice {sale_invoice.invoice_id.id}")
-                else:
-                    attachment_a_lines[box_ncf_type[ncf_type]][
-                        'amount'] += sale_invoice.invoice_id.amount_untaxed_signed
-                # attachment_a_lines[box_ncf_type[ncf_type]]['amount'] += \
-                #     sale_invoice.invoice_id.amount_untaxed_signed
+                attachment_a_lines[box_ncf_type[ncf_type]]['quantity'] += 1
+                attachment_a_lines[box_ncf_type[ncf_type]]['amount'] += \
+                    sale_invoice.invoice_id.amount_untaxed_signed
 
                 # AIII
                 attachment_a_lines[12]['amount'] += sale_invoice.cash \
