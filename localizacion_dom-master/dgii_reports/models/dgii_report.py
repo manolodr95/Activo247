@@ -3,6 +3,8 @@
 # © 2018 José López <jlopez@indexa.do>
 # © 2018 Gustavo Valverde <gustavo@iterativo.do>
 
+import logging
+_logger = logging.getLogger(__name__)
 import calendar
 import base64
 from datetime import datetime as dt, timedelta
