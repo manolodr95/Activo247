@@ -13,15 +13,10 @@
             <xpath expr="//field[@name='vat']" position="after">
                 <field name="is_fiscal_info_required" invisible="1"/>
 
-                <field name="vat" placeholder="ej. NNNNNNNNN" string="RNC"
+                <field name="vat" placeholder="ej. NNNNNNNNN" string="Cédula/RNC"
                        readonly="parent_id != False"
-                       invisible="country_id != %(base.do)s or not is_company"
                        required="is_fiscal_info_required"/>
 
-                <field name="vat" placeholder="ej. NNNNNNNNNNN" string="Cédula"
-                       readonly="parent_id != False"
-                       invisible="country_id != %(base.do)s or is_company"
-                       required="is_fiscal_info_required"/>
             </xpath>
 
             <group name="sale" position ="inside">
@@ -42,9 +37,13 @@
         <field name="priority">99</field>
         <field name="inherit_id" ref="base.view_res_partner_filter"/>
         <field name="arch" type="xml">
-            <field name="name" position="replace">
+            <!-- Agregar el campo identification_id antes del campo 'name' -->
+            <xpath expr="//search/field[@name='name']" position="before">
+                <field name="vat" string="Cédula" filter_domain="[('vat', 'ilike', self)]"/>
+            </xpath>
+            <!--<field name="name" position="replace">
                 <field name="name" filter_domain="['|','|','|',('display_name','ilike',self),('ref','=',self),('email','ilike',self),('vat','ilike',self)]"/>
-            </field>
+            </field>-->
         </field>
     </record>
 
