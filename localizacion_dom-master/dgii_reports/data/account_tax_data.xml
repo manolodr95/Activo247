@@ -3,7 +3,7 @@
     © 2024 Daniel Eduardo Diaz Mateo <daniel.diaz@isjo-technology.com>
 -->
 <odoo>
-    <data noupdate="1">
+    <data noupdate="0">
 
         <!-- Sales -->
         <record id="account.1_tax_18_sale" model="account.tax">

@@ -2,13 +2,13 @@
 <odoo>
 
     <template id="fiscal_info">
-        <div class="col-6">
+        <div class="col-md-10" >
             <h3 t-if="o.fiscal_type_id">
                 <t t-if="o.fiscal_type_id.prefix == 'B13'">
                     <span t-field="o.fiscal_type_id.name"/>
                 </t>
                 <t t-else="">
-                    Invoice of <span t-field="o.fiscal_type_id.name"/>
+                    <span t-if="o.move_type not in ['in_refund', 'out_refund']"> Invoice of </span> <span t-field="o.fiscal_type_id.name"/>
                 </t>
             </h3>
             <div t-if="o.ref">
@@ -44,8 +44,8 @@
     </template>
 
     <template id="complete_fiscal_info">
-        <div class="row pt-2 mb8">
-            <div class="col-6" name="company_address">
+        <div class="row">
+            <div class="col-4" name="company_address">
                 <div t-if="company.is_company_details_empty">
                     <strong><t t-esc="company.name"/></strong>
                     <t t-esc="company.partner_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": true}'/>
@@ -86,11 +86,11 @@
         <xpath expr="//div[@name='company_address']" position="attributes">
             <attribute name="t-if">not l10n_do_fiscal_invoice</attribute>
         </xpath>
-        <xpath expr="//div[hasclass('o_boxed_header')][1]" position="after">
+        <!--<xpath expr="//div[hasclass('o_boxed_header')][1]" position="after">
             <t t-if="l10n_do_fiscal_invoice">
                 <t t-call="l10n_do_accounting.complete_fiscal_info"/>
             </t>
-        </xpath>
+        </xpath>-->
     </template>
 
     <template id="external_layout_bold_inherited" inherit_id="web.external_layout_bold">
@@ -104,7 +104,8 @@
         </xpath>
         <xpath expr="//t[@t-call='web.address_layout']" position="replace">
             <t t-if="l10n_do_fiscal_invoice">
-                <div class="pt-5">
+                <!--<div class="pt-5">-->
+                <div>
                     <!-- This div ensures that the address is not cropped by the header. -->
                     <t t-call="web.address_layout"/>
                 </div>
@@ -126,7 +127,8 @@
         </xpath>
         <xpath expr="//t[@t-call='web.address_layout']" position="replace">
             <t t-if="l10n_do_fiscal_invoice">
-                <div class="pt-5">
+                <!--<div class="pt-5">-->
+                <div>
                     <!-- This div ensures that the address is not cropped by the header. -->
                     <t t-call="web.address_layout"/>
                 </div>

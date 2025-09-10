@@ -349,6 +349,19 @@ class AccountFiscalSequence(models.Model):
                 _("No Fiscal Sequence available for this type of document.")
             )
 
+    def action_draft(self):
+        for rec in self:
+            # Validaciones adicionales que quieras agregar
+            if rec.state in ['cancelled', 'depleted', 'expired']:
+                raise UserError(
+                    _("Solo se puede volver a borrador secuencias en estado Activo."))
+
+            rec.state = "draft"
+            # Aquí puedes agregar cualquier lógica adicional al volver a draft
+            # Por ejemplo, si quieres mantener pero desactivar la secuencia:
+            if rec.sequence_id:
+                rec.sequence_id.active = False
+
 
 class AccountFiscalType(models.Model):
     _name = "account.fiscal.type"
