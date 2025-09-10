@@ -7,8 +7,6 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_draft" string="Borrador" type="object"
-                            invisible="state in ['cancelled', 'depleted', 'expired', 'draft']"/>
                     <button name="action_confirm" string="Confirm" type="object"
                             class="oe_highlight" invisible="state != 'draft'"/>
                     <button name="action_queue" string="Queue" type="object"

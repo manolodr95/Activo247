@@ -2,6 +2,7 @@
 # See LICENSE file for full copyright and licensing details.
 
 import json
+
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
@@ -42,18 +43,16 @@ class AccountInvoice(models.Model):
 
             inv.payment_date = payment_date
 
-    @api.constrains('line_ids')
+    @api.constrains('line_ids',  'line_ids.tax_line_id')
     def _check_isr_tax(self):
-        """Restrict one ISR tax per invoice."""
+        """Restrict one ISR tax per invoice"""
         for inv in self:
-            # Obtén los tipos de impuestos ISR o similares en las líneas de impuestos
-            tax_types = [
+            line = [
                 tax_line.tax_line_id.l10n_do_tax_type
                 for tax_line in inv._get_tax_line_ids()
                 if tax_line.tax_line_id.l10n_do_tax_type in ['isr', 'ritbis']
             ]
-            # Si hay duplicados en los tipos de impuestos, genera un error
-            if len(tax_types) != len(set(tax_types)):
+            if len(line) != len(set(line)):
                 raise ValidationError(_('An invoice cannot have multiple withholding taxes.'))
 
     def _convert_to_local_currency(self, amount):
@@ -363,7 +362,6 @@ class AccountInvoice(models.Model):
             ('06', 'Credit Note'), 
             ('07', 'Mixed')
         ],
-        compute_sudo=True,
         compute='_compute_in_invoice_payment_form',
     )
     is_exterior = fields.Boolean(
