@@ -3,14 +3,17 @@
 # © 2018 José López <jlopez@indexa.do>
 # © 2018 Gustavo Valverde <gustavo@iterativo.do>
 
-import logging
-_logger = logging.getLogger(__name__)
 import calendar
+import time
 import base64
 from datetime import datetime as dt, timedelta
 
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
+
+import logging
+
+_logger = logging.getLogger(__name__)
 
 try:
     import pycountry
@@ -19,12 +22,18 @@ except ImportError:
         _("This module needs pycountry to get 609 ISO 3166 "
           "country codes. Please install pycountry on your system. "
           "(See requirements file)"))
+
+def custom_format(date):
+    period = '%s%02d' % (date.year, date.month)
+    day = '%02d' % date.day
+    return (period, day)
           
 
 class DgiiReport(models.Model):
     _name = 'dgii.reports'
     _description = "DGII Report"
-    _inherit = ['mail.thread']
+    _inherit = ["mail.thread"]
+    _order = "start_date desc"
 
     
     def _compute_previous_report_pending(self):
@@ -292,6 +301,23 @@ class DgiiReport(models.Model):
         inverse_name='dgii_report_id',
         domain=[('section', '=', '6')]
     )
+    
+    cash = fields.Monetary("Cash", copy=False)
+    bank = fields.Monetary("Check / Transfer / Deposit", copy=False)
+    card = fields.Monetary("Credit Card / Debit Card", copy=False)
+    credit = fields.Monetary("Credit", copy=False)
+    bond = fields.Monetary("Gift certificates or vouchers", copy=False)
+    swap = fields.Monetary("Swap", copy=False)
+    others = fields.Monetary("Other Sale Forms", copy=False)
+    sale_type_total = fields.Monetary("Sale Type Total", copy=False)
+
+    opr_income = fields.Monetary("Operations Income (No-Financial)", copy=False)
+    fin_income = fields.Monetary("Financial Income", copy=False)
+    ext_income = fields.Monetary("Extraordinary Income", copy=False)
+    lea_income = fields.Monetary("Lease Income", copy=False)
+    ast_income = fields.Monetary("Depreciable Assets Income", copy=False)
+    otr_income = fields.Monetary("Others Income", copy=False)
+    income_type_total = fields.Monetary("Income Total", copy=False)
 
     # General Summary of Consumer Invoices
     csmr_ncf_qty = fields.Integer(
@@ -415,16 +441,23 @@ class DgiiReport(models.Model):
     def get_date_tuple(date):
         return date.year, date.month
 
-    def _get_pending_invoices(self, types, states):
+    def _get_pending_invoices(self, types):
         period = dt.strptime(self.name, '%m/%Y')
+
+        month, year = self.name.split('/')
+        start_date = '{}-{}-{}'.format(
+            year, month,
+            calendar.monthrange(int(year), int(month))[1])
         invoice_ids = self.env['account.move'].search([
-            ('fiscal_status', '=', 'normal'),
-            ('payment_state', 'in', ('paid', 'in_payment')),
-            ('invoice_date', '<', self.start_date),
+            ('payment_state', 'in', ['paid', 'in_payment']),
+            ('payment_date', '<=', start_date),
             ('company_id', '=', self.company_id.id),
             ('move_type', 'in', types),
-            ('state', 'in', states)
-        ]).filtered(lambda inv: self.get_date_tuple(inv.payment_date if inv.payment_date else inv.invoice_date) == (period.year, period.month))
+            # "|",
+            # ('withholded_itbis', '!=', 0),
+            # ('third_withheld_itbis', '!=', 0),
+        ]).filtered(lambda inv: self.get_date_tuple(inv.payment_date) ==
+                                (period.year, period.month) and inv.journal_id.l10n_do_fiscal_journal is True)
 
         return invoice_ids
 
@@ -435,19 +468,23 @@ class DgiiReport(models.Model):
         :param type: a list of invoice type
         :return: filtered invoices
         """
+        month, year = self.name.split('/')
+        last_day = calendar.monthrange(int(year), int(month))[1]
+        start_date = '{}-{}-01'.format(year, month)
+        end_date = '{}-{}-{}'.format(year, month, last_day)
 
-        invoice_ids = self.env['account.move'].search([
-            ('invoice_date', '>=', self.start_date),
-            ('invoice_date', '<=', self.end_date),
-            ('company_id', '=', self.company_id.id),
-            ('is_l10n_do_fiscal_invoice', '=', True),
-            ('state', 'in', states),
-            ('move_type', 'in', types)
-        ], order='invoice_date asc').filtered(
-            lambda inv: inv.fiscal_type_id.prefix != False)
-        
-        # Append pending invoices (fiscal_status = Partial, state = Paid)
-        invoice_ids |= self._get_pending_invoices(types, states)
+        invoice_ids = self.env['account.move'].search(
+            [('invoice_date', '>=', start_date),
+             ('invoice_date', '<=', end_date),
+             ('company_id', '=', self.company_id.id),
+             ('state', 'in', states),
+             ('move_type', 'in', types)],
+            order='invoice_date asc').filtered(
+            lambda inv: inv.journal_id.l10n_do_fiscal_journal is True)
+
+        # # Append pending invoces (fiscal_status = Partial, state = Paid)
+        # if self.company_id.get_pending_607 and types[0] in ('out_invoice', 'out_refund'):
+        #     invoice_ids |= self._get_pending_invoices(types)
 
         return invoice_ids
 
@@ -550,10 +587,9 @@ class DgiiReport(models.Model):
             PurchaseLine = self.env['dgii.reports.purchase.line']
             PurchaseLine.search([('dgii_report_id', '=', rec.id)]).unlink()
 
-            invoice_ids = self._get_invoices(
-                ['posted'], 
-                ['in_invoice', 'in_refund']
-            )
+            invoice_ids = self._get_invoices(['posted'],
+                                             ['in_invoice', 'in_refund'])
+            invoice_ids |= self._get_pending_invoices(['in_invoice', 'in_refund'])
 
             line = 0
             report_data = ''
@@ -1847,6 +1883,15 @@ class DgiiReportPurchaseLine(models.Model):
     _description = "DGII Reports Purchase Line"
     _order = 'line asc'
 
+    @api.depends('invoice_date', 'payment_date')
+    def date_format(self):
+        for i in self:
+            i.date_period, i.date_period_day = custom_format(i.invoice_date)
+
+            if i.payment_date:
+                i.payment_period, i.payment_period_day = custom_format(
+                    i.payment_date)
+
     dgii_report_id = fields.Many2one('dgii.reports', ondelete='cascade')
     line = fields.Integer()
 
@@ -1855,8 +1900,22 @@ class DgiiReportPurchaseLine(models.Model):
     expense_type = fields.Char(size=2)
     fiscal_invoice_number = fields.Char(size=19)
     modified_invoice_number = fields.Char(size=19)
+    # Modifition fields
     invoice_date = fields.Date()
+    ###############################
+    date_period = fields.Char(
+        'Periodo Factura', compute='date_format', store=True)
+    date_period_day = fields.Char(
+        'Día Factura', compute='date_format', store=True)
+    ###############################
+    # Modifition fields
     payment_date = fields.Date()
+    ###############################
+    payment_period = fields.Char(
+        'Periodo Pago', compute='date_format', store=True)
+    payment_period_day = fields.Char(
+        'Día Pago', compute='date_format', store=True)
+    ###############################
     service_total_amount = fields.Float()
     good_total_amount = fields.Float()
     invoiced_amount = fields.Float()
@@ -1893,6 +1952,15 @@ class DgiiReportSaleLine(models.Model):
     _name = 'dgii.reports.sale.line'
     _description = "DGII Reports Sale Line"
 
+    @api.depends('invoice_date', 'withholding_date')
+    def date_format(self):
+        for i in self:
+            i.date_period = '%s%s' % custom_format(i.invoice_date)
+
+            if i.withholding_date:
+                i.withholding_period = '%s%s' % custom_format(
+                    i.withholding_date)
+
     dgii_report_id = fields.Many2one('dgii.reports', ondelete='cascade')
     line = fields.Integer()
 
@@ -1901,8 +1969,19 @@ class DgiiReportSaleLine(models.Model):
     fiscal_invoice_number = fields.Char(size=19)
     modified_invoice_number = fields.Char(size=19)
     income_type = fields.Char()
+    # Modifition fields
     invoice_date = fields.Date()
+    #################################
+    date_period = fields.Char(
+        'Periodo Comprobante', compute='date_format', store=True)
+    #################################
+    # Modifition fields
     withholding_date = fields.Date()
+    #################################
+    withholding_period = fields.Char(
+        'Periodo Retención', compute='date_format', store=True)
+    ##################################
+    
     invoiced_amount = fields.Float()
     invoiced_itbis = fields.Float()
     third_withheld_itbis = fields.Float()
@@ -1941,11 +2020,21 @@ class DgiiCancelReportLine(models.Model):
     _name = 'dgii.reports.cancel.line'
     _description = "DGII Reports Cancel Line"
 
+    @api.depends('invoice_date')
+    def date_format(self):
+        for i in self:
+            i.date_period = '%s%s' % custom_format(i.invoice_date)
+
     dgii_report_id = fields.Many2one('dgii.reports', ondelete='cascade')
     line = fields.Integer()
 
     fiscal_invoice_number = fields.Char(size=19)
+    # Modifition fields
     invoice_date = fields.Date()
+    #################################
+    date_period = fields.Char(
+        'Fecha Documento', compute='date_format', store=True)
+    
     annulation_type = fields.Char(size=2)
 
     invoice_partner_id = fields.Many2one('res.partner')

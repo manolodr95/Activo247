@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  © 2024 ISJO TECHNOLOGY, SRL (Daniel Diaz <daniel.diaz@isjo-technology.com>)
+  License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+-->
 <odoo>
 
     <record id="view_account_form_inherited" model="ir.ui.view">
@@ -9,6 +13,8 @@
             <xpath expr="//field[@name='allowed_journal_ids']" position="after">
                 <field name="box_attachment_a"/>
                 <field name="box_it1"/>
+                <field name="account_fiscal_type" invisible="1"/>
+                <field name="isr_retention_type"/>
             </xpath>
         </field>
     </record>
