@@ -499,27 +499,6 @@ class AccountInvoice(models.Model):
 
         return res
 
-    _sql_constraints = [
-        ('ref_uniq',
-         'unique(ref, company_id, partner_id, journal_id, move_type)',
-         '¡El número de factura debe ser único por empresa, proveedor, diario y tipo de movimiento!')
-    ]
-
-    @api.constrains('ref', 'company_id', 'partner_id', 'journal_id', 'move_type')
-    def _check_unique_ref(self):
-        for record in self:
-            if record.ref:
-                existing_moves = self.env['account.move'].search([
-                    ('ref', '=', record.ref),
-                    ('company_id', '=', record.company_id.id),
-                    ('partner_id', '=', record.partner_id.id),
-                    ('journal_id', '=', record.journal_id.id),
-                    ('move_type', '=', 'in_invoice'),
-                    ('id', '!=', record.id)  # Excluir el mismo registro en caso de edición
-                ])
-                if existing_moves:
-                    raise ValidationError("¡El número de factura debe ser único por empresa, proveedor, diario y tipo de movimiento!")
-    
     #esta funcion no esta en la 16.0.2.0.9
     # def validate_fiscal_purchase(self):
     #     for inv in self.filtered(
@@ -613,7 +592,9 @@ class AccountInvoice(models.Model):
             return self.action_invoice_cancel()
         else:
             return super(AccountInvoice, self).button_cancel()
-  
+
+        
+        
 
     @api.returns("self")
     def refund(self, invoice_date=None, date=None, description=None, journal_id=None):
@@ -707,28 +688,7 @@ class AccountInvoice(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        _logger.warning("Creando factura con datos: %s", vals_list)
-
-        if not vals_list or 'move_type' not in vals_list[0]:
-            return super(AccountInvoice, self).create(vals_list)
-
-        move_type = vals_list[0]['move_type']
-
-        if move_type == 'in_invoice':
-            _logger.warning("Chequeando unicidad de factura...")
-            existing_invoice = self.search([
-                ('ref', '=', vals_list[0].get('ref')),
-                ('state', 'not in', ('draft','cancel')),
-                ('company_id', '=', vals_list[0].get('company_id')),
-                ('partner_id', '=', vals_list[0].get('partner_id')),
-                ('journal_id', '=', vals_list[0].get('journal_id')),
-                ('move_type', '=', 'in_invoice'),
-            ], limit=1)
-            _logger.warning("Factura existente encontrada: %s", existing_invoice)
-
-            if existing_invoice:
-                raise ValidationError(
-                    _('¡El número de factura debe ser único por empresa, proveedor, diario y tipo de movimiento!'))
+        # Add default fiscal type from sales and purchase orders
 
         res = super(AccountInvoice, self).create(vals_list)
 
